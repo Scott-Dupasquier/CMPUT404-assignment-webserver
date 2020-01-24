@@ -64,13 +64,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
         #         # Filepath doesn't end in / so must redirect
         #         filepath += "/"
         #         self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
-
-        elif filepath == "/deep/":# or filepath == "/deep":
-            self.send_file("www/deep/index.html")
             
         elif filepath == "/deep":
             filepath += "/"
             self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
+
+        if filepath[len(filepath)-1] == "/": # Path ends with a /
+            self.send_file("www" + filepath + "index.html")
 
         else:
             # self.request.sendall(bytearray("200 OK\r\n",'utf-8'))
