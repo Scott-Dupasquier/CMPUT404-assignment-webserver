@@ -49,10 +49,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
         elif "/.." in filepath:
             # Trying to access files they aren't allowed to, give a 404
             self.request.send(bytearray("HTTP/1.1 404 Not Found\r\n\r\n", 'utf-8'))
-            
-        elif filepath == "/":
-            # Default to index.html
-            self.send_file("www/index.html")
 
         # elif '.' not in filepath: # We are dealing with a path and not a file
         #     path = "www/"
@@ -79,7 +75,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             filepath += "/"
             self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
 
-        if filepath[len(filepath)-1] == "/": # Path ends with a /
+        elif filepath[len(filepath)-1] == "/": # Path ends with a /
             self.send_file("www" + filepath + "index.html")
 
         else:
