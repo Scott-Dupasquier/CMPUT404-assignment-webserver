@@ -34,49 +34,63 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
         
-        # self.url = "http://127.0.0.1:8080"
+        self.url = "http://127.0.0.1:8080"
         split_data = self.data.decode('utf-8').split(' ')
         method = split_data[0]
 
         if (len(split_data) > 1):
-            filename = split_data[1] # PROBABLY WILL NEED TO CHANGE
-            # self.url += "/www" + filename
+            filepath = split_data[1] # Get the file path
+            # self.url += "/www" + filepath
 
-        # Can only handle GET method, not POST/PUT/DELETE
+        directories = os.listdir('www/')
+        for d in directories:
+            print(d)
+
+        redirect = False
+
         if (method != "GET"):
+            # Can only handle GET method, not POST/PUT/DELETE
             self.cannot_handle_method()
-        elif filename == "/":
-            # print("TRUE")
-            # directories = os.listdir('www/')
-            # for d in directories:
-            #     print(d, "\r\n")
-            #     self.request.sendall(bytearray(d, 'utf-8'))
+
+        elif "/.." in filepath:
+            self.request.send(bytearray("HTTP/1.1 404 Not Found\r\n\r\n", 'utf-8'))
+            
+        elif filepath == "/":
+            # Default to index.html
             self.send_file("www/index.html")
-        elif filename == "/deep/" or filename == "/deep":
+
+        # elif filepath.find('.') == -1: # We are dealing with a path and not a file
+        #     if filepath[len(filepath)-1] != "/":
+        #         # Filepath doesn't end in / so must redirect
+        #         filepath += "/"
+        #         self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
+
+        elif filepath == "/deep/":# or filepath == "/deep":
             self.send_file("www/deep/index.html")
+            
+        elif filepath == "/deep":
+            filepath += "/"
+            self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
+
         else:
             # self.request.sendall(bytearray("200 OK\r\n",'utf-8'))
-            self.send_file("www" + filename)
-
-    def redirect(new_location):
-        response = "HTTP/1.1 301 Moved Permanently\r\nLocation: " + new_location
-        self.request.send(bytearray(response, 'utf-8'))
+            self.send_file("www" + filepath)
 
     def cannot_handle_method(self):
         self.request.send(bytearray("HTTP/1.1 405 Method Not Allowed\r\n\r\n", 'utf-8'))
 
-    def send_file(self, filename):
+    def send_file(self, filepath):
         # to_send = "Content-Type: text/html\r\n\r\n"
         to_send = ""
         try:
-            req_file = open(filename, 'r')
+            req_file = open(filepath, 'r')
 
-            # if (filename.find('.') != -1):
-            split_data = filename.split('.')
+            # if (filepath.find('.') != -1):
+            split_data = filepath.split('.')
             content_type = split_data[1]
 
             try:
-                content_length = os.path.getsize(filename)
+                content_length = os.path.getsize(filepath)
             except:
                 print("Failed to get length")
                 content_length = 0
