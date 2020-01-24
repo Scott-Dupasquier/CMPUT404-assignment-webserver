@@ -52,6 +52,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
             #     print(d, "\r\n")
             #     self.request.sendall(bytearray(d, 'utf-8'))
             self.send_file("www/index.html")
+        elif filename == "/deep/" or filename == "/deep":
+            self.send_file("www/deep/index.html")
         else:
             # self.request.sendall(bytearray("200 OK\r\n",'utf-8'))
             self.send_file("www" + filename)
