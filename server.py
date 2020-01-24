@@ -2,7 +2,7 @@
 import socketserver
 import os
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2020 Scott Dupasquier
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,33 +34,43 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
         
-        self.url = "http://127.0.0.1:8080"
+        # Split the request into its different parts
         split_data = self.data.decode('utf-8').split(' ')
-        method = split_data[0]
+        method = split_data[0] # Method is the first part given
 
+        # Make sure the request isn't empty
         if (len(split_data) > 1):
             filepath = split_data[1] # Get the file path
-            # self.url += "/www" + filepath
-
-        directories = os.listdir('www/')
-        for d in directories:
-            print(d)
-
-        redirect = False
 
         if (method != "GET"):
             # Can only handle GET method, not POST/PUT/DELETE
             self.cannot_handle_method()
 
         elif "/.." in filepath:
+            # Trying to access files they aren't allowed to, give a 404
             self.request.send(bytearray("HTTP/1.1 404 Not Found\r\n\r\n", 'utf-8'))
             
         elif filepath == "/":
             # Default to index.html
             self.send_file("www/index.html")
 
-        # elif filepath.find('.') == -1: # We are dealing with a path and not a file
-        #     if filepath[len(filepath)-1] != "/":
+        # elif '.' not in filepath: # We are dealing with a path and not a file
+        #     path = "www/"
+        #     directories = os.listdir(path)
+        #     split_path = filepath.split("/")
+        #     index = 1
+
+        #     print(split_path)
+        #     valid_path = True
+        #     while index < len(split_path) and split_path[index] != '':
+        #         if split_path[index] not in directories:
+        #             valid_path = False
+        #         else:
+        #             path += split_path[index] + "/"
+        #             directories = os.listdir(path)
+        #             index += 1
+
+        #     if valid_path and filepath[len(filepath)-1] != "/":
         #         # Filepath doesn't end in / so must redirect
         #         filepath += "/"
         #         self.request.send(bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: 127.0.0.1:8080" + filepath, 'utf-8'))
@@ -73,30 +83,31 @@ class MyWebServer(socketserver.BaseRequestHandler):
             self.send_file("www" + filepath + "index.html")
 
         else:
-            # self.request.sendall(bytearray("200 OK\r\n",'utf-8'))
             self.send_file("www" + filepath)
 
     def cannot_handle_method(self):
+        # Send a 405 error to show method isn't supported
         self.request.send(bytearray("HTTP/1.1 405 Method Not Allowed\r\n\r\n", 'utf-8'))
 
     def send_file(self, filepath):
-        # to_send = "Content-Type: text/html\r\n\r\n"
         to_send = ""
         try:
-            req_file = open(filepath, 'r')
+            req_file = open(filepath, 'r') # Open the file
 
-            # if (filepath.find('.') != -1):
+            # Split the data to get just the file type
             split_data = filepath.split('.')
             content_type = split_data[1]
 
-            try:
-                content_length = os.path.getsize(filepath)
-            except:
-                print("Failed to get length")
-                content_length = 0
-            else:
-                print(content_length)
+            # Couldn't get content-length to send without errors so I had to remove it
+            # try:
+            #     content_length = os.path.getsize(filepath)
+            # except:
+            #     print("Failed to get length")
+            #     content_length = 0
+            # else:
+            #     print(content_length)
 
+            # Request succeeded, send 200 OK
             to_send = "HTTP/1.1 200 OK\nContent-Type: text/" + content_type + "\r\n\r\n" #"\nContent-Length: " + content_length + 
             self.request.send(bytearray(to_send, 'utf-8'))
 
@@ -104,11 +115,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
             for l in req_file:
                 to_send += l
 
+            # Send all information in the file
             self.request.sendall(bytearray(to_send, 'utf-8'))
             req_file.close()
+
         except:
+            # Throw an HTTPError since the file can't be found
             self.request.send(bytearray("HTTP/1.1 404 Not Found\r\n\r\n", 'utf-8'))
-            # raise request.HTTPError(url=self.url, code=404, msg="Not Found", hdrs=None, fp=None)
             
 
 if __name__ == "__main__":
